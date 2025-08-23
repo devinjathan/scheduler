@@ -6,17 +6,6 @@ let days = [0, 1, 2, 3, 4, 5, 6];
 let currID = 1;
 
 // schedules
-// let shiftTemplate = [
-//     {name: wdMorningSL, role: SL, start:"11:00", end:"18:15"},
-//     {name: wdMorningTM, role: TM, start:"11:15", end:"18:15"},
-//     {name: wdNightSL, role:SL, start:"05:15", end:"00:00"},
-//     {name: wdNightTM, role:TM, start:"05:30", end:"00:00"},
-//     //wknd
-//     {name: wndMorningSL, role: SL, start:"11:00", end:"18:30"},
-//     {name: wndMorningTM, role: TM, start:"11:15", end:"18:30"},
-//     {name: wndNightSL, role: SL, start:"05:30", end:"01:00"},
-//     {name: wndNightTM, role: TM, start:"05:45", end:"01:00"},
-// ];
 
 // let schedule = [
 //     {day: "Monday", role: "SL", start: "11:00", end: "18:15", employee: null},
@@ -66,13 +55,13 @@ let currID = 1;
 // ];
 
 let schedule = {
-    Monday: { morning: [], floater: [], night: [] },
-    Tuesday: { morning: [], floater: [], night: [] },
-    Wednsday: { morning: [], floater: [], night: [] },
-    Thursday: { morning: [], floater: [], night: [] },
-    Friday: { morning: [], floater: [], night: [] },
-    Satday: { morning: [], floater: [], night: [] },
-    Sunday: { morning: [], floater: [], night: [] }
+    Monday: {morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Tuesday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Wednesday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Thursday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Friday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Saturday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
+    Sunday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} }
 };
 
 
@@ -106,9 +95,45 @@ function shuffleDays(arr){
 /*
     Assign Shift
 */
-function assignShift(day, shift, role, employee){
-    
+function assignShift(day, shift, role, id){
+    let employee = employees.get(id);
+
+    // check to see if employee is available that shift and day
+    if (employee.availability[day][shift] == false){
+        console.log("Not available for ", shift);
+        return false;
+    }
+    // check if they already worked that day
+    if (workingThatDay(day, id)){
+        console.log("Already working this day");
+        return false;
+    }
+    // check if they are SL and if theres already one on that shift
+    if(role == "SL" && shift != "float" && schedule[day][shift].SL.length > 0){
+        console.log("Already has Shift lead on shift");
+        return false;
+    }
+
+
+    // add onto shift
+    schedule[day][shift][role].push(id);
+    console.log('Assigned ', employee.name, ' to shift ', day, ' ', shift, '.');
+
 }
+
+function workingThatDay(day, id){
+    let shifts = schedule[day];
+    for(let shiftName in shifts) {
+        let roles = shifts[shiftName];
+        for( let role in roles){
+            if(roles[role].includes(id)){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 
 /*
     Employee Helpers
@@ -156,21 +181,68 @@ function createAvailability(morning, float, night){
 ***************************************/
 
 
-addEmployee("Hannah Lee", {
-    Monday:    createAvailability(true, true, false),
-    Tuesday:   createAvailability(true, true, false),
-    Wednesday: createAvailability(true, false, true),
-    Thursday:  createAvailability(true, true, false),
-    Friday:    createAvailability(true, false, true),
-    Saturday:  createAvailability(true, false, false),
-    Sunday:    createAvailability(false, false, false)
-}, "mid");
+/**************************************
+    TESTING SCHEDULER FUNCTIONS
+***************************************/
 
-console.log("===== Current Employees =====");
-for (let [id, emp] of employees) {
-    console.log(`${emp.name} (ID: ${id})`);
-    for (let day in emp.availability) {
-        console.log(`  ${day}: ${JSON.stringify(emp.availability[day])}`);
-    }
-    console.log(`  Preferred Shift: ${emp.preferredShift}`);
+// Create some employees
+addEmployee("Hannah Lee", {
+    Monday: createAvailability(true, true, false),
+    Tuesday: createAvailability(true, true, false),
+    Wednesday: createAvailability(true, false, true),
+    Thursday: createAvailability(true, true, false),
+    Friday: createAvailability(true, false, true),
+    Saturday: createAvailability(true, false, false),
+    Sunday: createAvailability(false, false, false)
+}, "morning");
+
+addEmployee("John Doe", {
+    Monday: createAvailability(true, true, true),
+    Tuesday: createAvailability(true, true, true),
+    Wednesday: createAvailability(true, true, true),
+    Thursday: createAvailability(true, true, true),
+    Friday: createAvailability(true, true, true),
+    Saturday: createAvailability(true, true, true),
+    Sunday: createAvailability(true, true, true)
+}, "night");
+
+addEmployee("Jane Smith", {
+    Monday: createAvailability(true, true, true),
+    Tuesday: createAvailability(false, true, true),
+    Wednesday: createAvailability(true, true, true),
+    Thursday: createAvailability(true, true, true),
+    Friday: createAvailability(true, false, true),
+    Saturday: createAvailability(true, false, true),
+    Sunday: createAvailability(true, true, true)
+}, "float");
+
+// Assign shifts
+console.log("\n--- Assign Shifts ---");
+assignShift("Monday", "morning", "SL", 1);   // Hannah as SL morning
+assignShift("Monday", "morning", "TM", 2);   // John as TM morning
+assignShift("Monday", "float", "TM", 3);     // Jane as float
+assignShift("Monday", "morning", "SL", 2);   // John trying to be SL morning (should fail)
+assignShift("Monday", "float", "SL", 1);     // Hannah trying float SL (should fail)
+
+// Check workingThatDay
+console.log("\n--- Check Working That Day ---");
+console.log("Hannah working Monday?", workingThatDay("Monday", 1)); // true
+console.log("John working Monday?", workingThatDay("Monday", 2));   // true
+console.log("Jane working Monday?", workingThatDay("Monday", 3));   // true
+console.log("Hannah working Tuesday?", workingThatDay("Tuesday", 1)); // false
+
+// Print schedule for Monday
+console.log("\n--- Monday Schedule ---");
+for (let shift in schedule.Monday) {
+    console.log(shift, schedule.Monday[shift]);
 }
+
+// Edit availability and re-test
+console.log("\n--- Edit Availability ---");
+editAvailability(1, "Monday", "morning", false);
+console.log("Hannah availability Monday morning:", employees.get(1).availability.Monday.morning);
+
+// Try to assign again
+console.log("\n--- Attempt Re-Assign ---");
+assignShift("Monday", "morning", "SL", 1); // should fail
+
