@@ -66,9 +66,19 @@ let schedule = {
 
 
 /*
-    Scheduler Algorithm
+    Auto Scheduler Algorithm
 */
-function runSchedule(schedule, employees)
+/*
+    - Shuffle week days
+    - While there are unassigned preferred shifts
+        - shuffle employee list
+        - each employee give preferred shift
+    - 2nd pass 
+        - shuffle employee list
+        - assign based on availability and remaining hours
+    Optional: Assign float shift only if extra labor is allowed
+*/
+function autoSchedule(schedule, employees, totalHours)
 {
     shuffleDays(days);
     for(let i = 0; i < days.length; i++){
@@ -138,6 +148,8 @@ function workingThatDay(day, id){
 /*
     Employee Helpers
 */
+// add employee to map
+// {id, name, availability, preferredShift}
 function addEmployee(name, availability, preferredShift){
     let currEmployee = {id: currID, name: name, availability: availability, preferredShift: preferredShift};
     employees.set(currID, currEmployee);
@@ -147,6 +159,7 @@ function addEmployee(name, availability, preferredShift){
     return;
 }
 
+// removes employee from map
 function removeEmployee(id){
     if(employees.has(id)){
         employees.delete(id);
@@ -155,10 +168,6 @@ function removeEmployee(id){
 }
 
 // Takes id and finds day and shift to update their availability to true or false
-// id - int
-// day - string
-// shift - string
-// available - bool
 function editAvailability(id, day, shift, available){
      if(employees.has(id)){
         let currEmployee = employees.get(id);
@@ -167,6 +176,7 @@ function editAvailability(id, day, shift, available){
     return;
 }
 
+// Helper to assign availabilities using true and false
 function createAvailability(morning, float, night){
     return{
         morning: morning,
