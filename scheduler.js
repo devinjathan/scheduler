@@ -5,6 +5,18 @@ let employees = new Map();
 let days = [0, 1, 2, 3, 4, 5, 6];
 let currID = 1;
 
+let shiftHours = {
+    SL_morning: 7.25,
+    TM_morning: 7,
+    SL_night: 6.75,
+    TM_night: 6.5,
+    SL_FSmorning: 7.5,
+    TM_FSmorning: 7.25,
+    SL_FSnight: 7.5,
+    TM_FSnight: 7.25
+}
+
+
 // schedules
 
 // let schedule = [
@@ -65,27 +77,80 @@ let schedule = {
 };
 
 
+/**************************************
+    autoScheduleTemplate 
+***************************************/
 /*
-    Auto Scheduler Algorithm
+    Friday and Saturday are priority days (more busy)
+    - loop and create shifts until total hours is filled
+        - Add ShiftLead to every shift
+        - Add one team member to each shift
+
 */
-/*
-    - Shuffle week days
-    - While there are unassigned preferred shifts
-        - shuffle employee list
-        - each employee give preferred shift
-    - 2nd pass 
-        - shuffle employee list
-        - assign based on availability and remaining hours
-    Optional: Assign float shift only if extra labor is allowed
-*/
-function autoSchedule(schedule, employees, totalHours)
+function autoScheduleTemplate(schedule, totalHours){
+    currHours = 0;
+
+    // function to add a shift
+    function addShift(day, shift){
+        // create keys to check for hours
+        let slKey;
+        let tmKey;
+        if(day == 'Friday' || day == 'Saturday'){
+            slKey = "SL_FS" + shift;
+            tmKey = "TM_FS" + shift;
+        }else{
+            slKey = "SL_" + shift;
+            tmKey = "TM_" + shift;
+        }
+
+        // add SL to shift
+        if(schedule[day][shift].SL.length == 0){
+            let hours = shiftHours[slKey];
+            if(currHours + hours > totalHours){
+                return false;
+            }
+            schedule[day][shift].SL.push({employees: null, hours});
+            currHours += hours;
+        }
+        // add TM to shift
+        let hours = shiftHours[tmKey];
+        if(currHours + hours > totalHours){
+            return false;
+        }else{
+            schedule[day][shift].TM.push({employees: null, hours});
+            currHours += hours;
+        }
+        return true;
+    }
+
+    // create the schedule template
+    for(let day in schedule){
+        if(!addShift(day, "morning")) break;
+        if(!addShift(day, "night")) break;
+    }
+
+    console.log("Template created. Amount of Hours filled = ", currHours);
+    
+}
+
+
+/**************************************
+   autoAssign Algorithm
+***************************************/
+function autoAssign(schedule, employees, totalHours)
 {
     shuffleDays(days);
+    // create two new arrays (one with TMs one with SLs)
+    
+    // Shuffle both arrays
+
+
     for(let i = 0; i < days.length; i++){
         const currentDay = days[i];
-
     }
 }
+
+//
 
 /**************************************
     Helper Functions
@@ -150,8 +215,16 @@ function workingThatDay(day, id){
 */
 // add employee to map
 // {id, name, availability, preferredShift}
-function addEmployee(name, availability, preferredShift){
-    let currEmployee = {id: currID, name: name, availability: availability, preferredShift: preferredShift};
+function addEmployee(name, availability, preferredShift, amountOfShifts, role, currShiftNum){
+    let currEmployee = {
+        id: currID, 
+        name: name, 
+        availability: availability, 
+        preferredShift: preferredShift,
+        preferredAmountofShifts: amountOfShifts,
+        role: role,
+        currShiftNum: currShiftNum
+    };
     employees.set(currID, currEmployee);
 
     currID++;
@@ -256,3 +329,23 @@ console.log("Hannah availability Monday morning:", employees.get(1).availability
 console.log("\n--- Attempt Re-Assign ---");
 assignShift("Monday", "morning", "SL", 1); // should fail
 
+autoAssign(schedule, employees, 280);
+
+
+function printFullSchedule() {
+    for (let day in schedule) {
+        console.log(day);
+        for (let shift in schedule[day]) {
+            console.log("  " + shift);
+            for (let role in schedule[day][shift]) {
+                let assignments = schedule[day][shift][role];
+                console.log("    " + role + ": " + assignments.map(a => a.employees).join(", "));
+            }
+        }
+    }
+}
+
+
+
+autoScheduleTemplate(schedule, 150);
+printFullSchedule(schedule);
