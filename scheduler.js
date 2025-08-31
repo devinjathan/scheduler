@@ -19,53 +19,6 @@ let shiftHours = {
 
 // schedules
 
-// let schedule = [
-//     {day: "Monday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Monday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Monday", role: "SL", start: "17:15", end: "00:00", employee: null},
-//     {day: "Monday", role: "TM", start: "17:30", end: "00:00", employee: null},
-//     {day: "Monday", role: "TM", start: "17:30", end: "00:00", employee: null},
-
-//     {day: "Tuesday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Tuesday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Tuesday", role: "SL", start: "17:15", end: "00:00", employee: null},
-//     {day: "Tuesday", role: "TM", start: "17:30", end: "00:00", employee: null},
-//     {day: "Tuesday", role: "TM", start: "17:30", end: "00:00", employee: null},
-
-//     {day: "Wednsday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Wednsday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Wednsday", role: "SL", start: "17:15", end: "00:00", employee: null},
-//     {day: "Wednsday", role: "TM", start: "17:30", end: "00:00", employee: null},
-//     {day: "Wednsday", role: "TM", start: "17:30", end: "00:00", employee: null},
-
-//     {day: "Thursday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Thursday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Thursday", role: "SL", start: "17:15", end: "00:00", employee: null},
-//     {day: "Thursday", role: "TM", start: "17:30", end: "00:00", employee: null},
-//     {day: "Thursday", role: "TM", start: "17:30", end: "00:00", employee: null},
-
-//     {day: "Friday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Friday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Friday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Friday", role: "SL", start: "17:30", end: "01:00", employee: null},
-//     {day: "Friday", role: "TM", start: "17:45", end: "01:00", employee: null},
-//     {day: "Friday", role: "TM", start: "17:45", end: "01:00", employee: null},
-
-//     {day: "Saturday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Saturday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Saturday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Saturday", role: "SL", start: "17:30", end: "01:00", employee: null},
-//     {day: "Saturday", role: "TM", start: "17:45", end: "01:00", employee: null},
-//     {day: "Saturday", role: "TM", start: "17:45", end: "01:00", employee: null},
-
-//     {day: "Sunday", role: "SL", start: "11:00", end: "18:15", employee: null},
-//     {day: "Sunday", role: "TM", start: "11:15", end: "18:15", employee: null},
-//     {day: "Sunday", role: "SL", start: "17:15", end: "00:00", employee: null},
-//     {day: "Sunday", role: "TM", start: "17:30", end: "00:00", employee: null},
-//     {day: "Sunday", role: "TM", start: "17:30", end: "00:00", employee: null},
-
-// ];
-
 let schedule = {
     Monday: {morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
     Tuesday: { morning: {SL: [], TM: []}, float: {TM: []}, night: {SL: [], TM: []} },
@@ -87,7 +40,7 @@ let schedule = {
         - Add one team member to each shift
 
 */
-function autoScheduleTemplate(schedule, totalHours){
+function autoScheduleTemplate(schedule, totalHours, priorityShifts){
     currHours = 0;
 
     // function to add a shift
@@ -104,12 +57,13 @@ function autoScheduleTemplate(schedule, totalHours){
         }
 
         // add SL to shift
-        if(schedule[day][shift].SL.length == 0){
+        if(schedule[day][shift].SL.length === 0){
             let hours = shiftHours[slKey];
             if(currHours + hours > totalHours){
                 return false;
             }
             schedule[day][shift].SL.push({employees: null, hours});
+            //schedule[day][shift].push(SL: [employees: null, hours]);
             currHours += hours;
         }
         // add TM to shift
@@ -125,12 +79,22 @@ function autoScheduleTemplate(schedule, totalHours){
 
     // create the schedule template
     for(let day in schedule){
+        console.log(day);
         if(!addShift(day, "morning")) break;
         if(!addShift(day, "night")) break;
     }
+    // loop through priority days until all priority days are full
+    for(let ps of priorityShifts){
+        if(!addShift(ps.day, ps.shift)){
+            break;
+        }
+    }
+
+    // after priority days add floaters
+    
 
     console.log("Template created. Amount of Hours filled = ", currHours);
-    
+    schedule.totalAssignedHours = currHours;
 }
 
 
@@ -269,83 +233,96 @@ function createAvailability(morning, float, night){
 ***************************************/
 
 // Create some employees
-addEmployee("Hannah Lee", {
-    Monday: createAvailability(true, true, false),
-    Tuesday: createAvailability(true, true, false),
-    Wednesday: createAvailability(true, false, true),
-    Thursday: createAvailability(true, true, false),
-    Friday: createAvailability(true, false, true),
-    Saturday: createAvailability(true, false, false),
-    Sunday: createAvailability(false, false, false)
-}, "morning");
+// addEmployee("Hannah Lee", {
+//     Monday: createAvailability(true, true, false),
+//     Tuesday: createAvailability(true, true, false),
+//     Wednesday: createAvailability(true, false, true),
+//     Thursday: createAvailability(true, true, false),
+//     Friday: createAvailability(true, false, true),
+//     Saturday: createAvailability(true, false, false),
+//     Sunday: createAvailability(false, false, false)
+// }, "morning");
 
-addEmployee("John Doe", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "night");
+// addEmployee("John Doe", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(true, true, true),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "night");
 
-addEmployee("Jane Smith", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(false, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, false, true),
-    Saturday: createAvailability(true, false, true),
-    Sunday: createAvailability(true, true, true)
-}, "float");
+// addEmployee("Jane Smith", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(false, true, true),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, false, true),
+//     Saturday: createAvailability(true, false, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "float");
 
-// Assign shifts
-console.log("\n--- Assign Shifts ---");
-assignShift("Monday", "morning", "SL", 1);   // Hannah as SL morning
-assignShift("Monday", "morning", "TM", 2);   // John as TM morning
-assignShift("Monday", "float", "TM", 3);     // Jane as float
-assignShift("Monday", "morning", "SL", 2);   // John trying to be SL morning (should fail)
-assignShift("Monday", "float", "SL", 1);     // Hannah trying float SL (should fail)
+// // Assign shifts
+// console.log("\n--- Assign Shifts ---");
+// assignShift("Monday", "morning", "SL", 1);   // Hannah as SL morning
+// assignShift("Monday", "morning", "TM", 2);   // John as TM morning
+// assignShift("Monday", "float", "TM", 3);     // Jane as float
+// assignShift("Monday", "morning", "SL", 2);   // John trying to be SL morning (should fail)
+// assignShift("Monday", "float", "SL", 1);     // Hannah trying float SL (should fail)
 
-// Check workingThatDay
-console.log("\n--- Check Working That Day ---");
-console.log("Hannah working Monday?", workingThatDay("Monday", 1)); // true
-console.log("John working Monday?", workingThatDay("Monday", 2));   // true
-console.log("Jane working Monday?", workingThatDay("Monday", 3));   // true
-console.log("Hannah working Tuesday?", workingThatDay("Tuesday", 1)); // false
+// // Check workingThatDay
+// console.log("\n--- Check Working That Day ---");
+// console.log("Hannah working Monday?", workingThatDay("Monday", 1)); // true
+// console.log("John working Monday?", workingThatDay("Monday", 2));   // true
+// console.log("Jane working Monday?", workingThatDay("Monday", 3));   // true
+// console.log("Hannah working Tuesday?", workingThatDay("Tuesday", 1)); // false
 
-// Print schedule for Monday
-console.log("\n--- Monday Schedule ---");
-for (let shift in schedule.Monday) {
-    console.log(shift, schedule.Monday[shift]);
-}
+// // Print schedule for Monday
+// console.log("\n--- Monday Schedule ---");
+// for (let shift in schedule.Monday) {
+//     console.log(shift, schedule.Monday[shift]);
+// }
 
-// Edit availability and re-test
-console.log("\n--- Edit Availability ---");
-editAvailability(1, "Monday", "morning", false);
-console.log("Hannah availability Monday morning:", employees.get(1).availability.Monday.morning);
+// // Edit availability and re-test
+// console.log("\n--- Edit Availability ---");
+// editAvailability(1, "Monday", "morning", false);
+// console.log("Hannah availability Monday morning:", employees.get(1).availability.Monday.morning);
 
-// Try to assign again
-console.log("\n--- Attempt Re-Assign ---");
-assignShift("Monday", "morning", "SL", 1); // should fail
+// // Try to assign again
+// console.log("\n--- Attempt Re-Assign ---");
+// assignShift("Monday", "morning", "SL", 1); // should fail
 
-autoAssign(schedule, employees, 280);
-
-
-function printFullSchedule() {
+function printScheduleWithHours(schedule) {
     for (let day in schedule) {
-        console.log(day);
+        console.log(day + ":");
         for (let shift in schedule[day]) {
-            console.log("  " + shift);
-            for (let role in schedule[day][shift]) {
-                let assignments = schedule[day][shift][role];
-                console.log("    " + role + ": " + assignments.map(a => a.employees).join(", "));
+            console.log("  " + shift + ":");
+
+            let shiftData = schedule[day][shift];
+            for (let role in shiftData) {
+                // For each slot, show hours and "employee" if employees is null
+                let output = shiftData[role].map(slot => {
+                    let empName = slot.employees === null ? "employee" : slot.employees;
+                    return `${empName} (${slot.hours}h)`;
+                }).join(", ");
+
+                console.log(`    ${role}: [${output}]`);
             }
         }
     }
 }
+const priorityShifts = [
+    { day: "Saturday", shift: "night" },
+    { day: "Saturday", shift: "morning" },
+    { day: "Friday", shift: "night" },
+    { day: "Friday", shift: "morning" },
+    { day: "Sunday", shift: "morning" },
+    { day: "Sunday", shift: "night" },
+    { day: "Friday", shift: "morning" },
+    { day: "Friday", shift: "night" },
+];
 
+autoScheduleTemplate(schedule, 230, priorityShifts);  // fill your template
+printScheduleWithHours(schedule);      // print nicely
 
-
-autoScheduleTemplate(schedule, 150);
-printFullSchedule(schedule);
