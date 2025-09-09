@@ -16,6 +16,8 @@ let employees = new Map();
 
 // Number of desired hours for schedule
 let totalDesiredHours = 0;
+let totalPrefShifts = 0;
+let currentShiftCount = 0;
 
 let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 let currID = 1;
@@ -33,8 +35,8 @@ let shiftHours = {
     TM_float: 7
 }
 
-let PrefProportion = 0;
-let FairProportion = 0;
+let PrefProportion = 0.5;
+let FairProportion = 0.5;
 
 // Priority Floater days
 priorityFloaterShifts = [
@@ -186,13 +188,9 @@ function autoScheduleTemplate(schedule, totalHours, priorityShifts){
 ***************************************/
 function autoAssign(schedule, employees)
 {
-    // reset current shift counter
-    for (let [, emp] of employees) {
-        emp.currShiftNum = 0;
-        emp.pShiftCounter = 0;
-    }
+    //shuffle days
     shuffle(days);
-    console.log(days);
+
     // create two new arrays (one with TMs one with SLs)
     let shiftLeads = Array.from(employees.entries()).filter(([id, emp]) => emp.role === "SL").map(([id, emp]) => id);
     console.log("Shift Leads IDs:", shiftLeads);
@@ -217,23 +215,33 @@ function autoAssign(schedule, employees)
         }
     }
 
+    shuffle(days);
     //Phase 2: Assign team members based off of scores
     for(let day of days){
         for(let currShift in schedule[day]){
-            schedule[day][currShift].TM.forEach(spot =>{
+            for(let spot of schedule[day][currShift].TM){
                 if(spot.employees === null){
+                    // stops early if there are no more employees with shifts wanted
+                    if(totalPrefShifts === currentShiftCount){
+                        console.log("Achieved enough preferred shifts with extra shifts to go");
+                        return true;
+                    }
+                    console.log("total Pref Shift count = ", totalPrefShifts);
+                    console.log("Shift count = ", currentShiftCount);
+
                     let bestID = bestCandidate(wholeCrew, day, currShift);
-                    console.log(bestID);
-                    if(bestID !== null){
+                    if(bestID === null){
+                        console.log("failed");
+                        return false;
+                    }else{
                         assignShift(day, currShift, "TM", bestID);
                     }
                 }
-            })
+            }
         }
     }
 
-
-
+    return true;
 }
 
 //
@@ -271,7 +279,7 @@ function bestCandidate(pool, day, shift){
 
         // Phase 1: Filter out not employees not able to work that shift
         // if not available, then score 0 and continue
-        if (employee.availability[day][shift] == false){
+        if (employee.availability[day][shift] === false){
             currScore = -10;
             continue;
         }
@@ -310,16 +318,16 @@ function bestCandidate(pool, day, shift){
     }
 
     // pick random if none fall back
-    shuffle(pool);
-    if(!bestCandidate){
-        for(let currID of pool){
-            let employee = employees.get(currID);
-            if(employee.availability[day][shift] && !workingThatDay(day, currID) && employee.currShiftNum < employee.preferredAmountofShifts){
-                bestCandidate = currID;
-                break;
-            }
-        }
-    }
+    // shuffle(pool);
+    // if(!bestCandidate){
+    //     for(let currID of pool){
+    //         let employee = employees.get(currID);
+    //         if(employee.availability[day][shift] && !workingThatDay(day, currID) && employee.currShiftNum < employee.preferredAmountofShifts){
+    //             bestCandidate = currID;
+    //             break;
+    //         }
+    //     }
+    // }
 
 
     return bestCandidate;
@@ -342,6 +350,7 @@ function assignShift(day, shift, role, id){
     }
     slot.employees = id;
     employee.currShiftNum++;
+    currentShiftCount++;
     console.log('Assigned ', employee.name, ' to shift ', day, ' ', shift, '.');
 
 }
@@ -382,6 +391,7 @@ function addEmployee(name, availability, preferredShift, amountOfShifts, role, c
         currShiftNum: currShiftNum,
         pShiftCounter: pShiftCounterBaseLine
     };
+    totalPrefShifts += amountOfShifts;
     employees.set(currID, currEmployee);
 
     currID++;
@@ -392,6 +402,8 @@ function addEmployee(name, availability, preferredShift, amountOfShifts, role, c
 // removes employee from map
 function removeEmployee(id){
     if(employees.has(id)){
+        let employee = employees.get(id);
+        totalPrefShifts -= employee.preferredAmountofShifts;
         employees.delete(id);
     }
     return;
@@ -415,6 +427,37 @@ function createAvailability(morning, float, night){
     }
 }
 
+// loop function to run autoAssign
+function tryAutoAssign(schedule, employees){
+    let max_retries = 500;
+    let attempts = 0;
+    while(attempts < max_retries){
+        // try to assign
+        if(autoAssign(schedule, employees)){
+            console.log("AutoAssign Successful!");
+            return true;
+        }else{
+            console.log("AutoAssign Failed! on attempt ", attempts);
+        }
+        attempts++;
+
+        // reset before loop
+        resetEmpStats();
+        autoScheduleTemplate(schedule, totalDesiredHours, priorityShifts);
+
+    }
+    console.log("max attempts please try again");
+    return false;
+}
+
+// to reset stats of employees
+function resetEmpStats(){
+    for (let [, emp] of employees) {
+        emp.currShiftNum = 0;
+        emp.pShiftCounter = 0;
+    }
+    currentShiftCount = 0;
+}
 
 /**************************************
     HTML Linkage
@@ -606,6 +649,7 @@ document.getElementById("Schedule_Template_Form").addEventListener("submit", fun
 // Button to start generating schedule
 const genSchedBtn = document.getElementById("genSchedTemplate");
 genSchedBtn.addEventListener("click", () => {
+    resetEmpStats();
     autoScheduleTemplate(schedule, totalDesiredHours, priorityShifts);
     renderSchedule(schedule);
 });
@@ -613,8 +657,11 @@ genSchedBtn.addEventListener("click", () => {
 // Button to start auto assigning
 const autoAssignBtn = document.getElementById("autoAssignBtn");
 autoAssignBtn.addEventListener("click", () => {
-    autoAssign(schedule,employees);
-    renderSchedule(schedule);
+    if(tryAutoAssign(schedule,employees)){
+        renderSchedule(schedule);
+    }else{
+        console.log("absolutely failed :(");
+    }
 });
 
 // Grab slider and output div
@@ -666,7 +713,7 @@ function renderPriorityList() {
 
 // testing function below TEMP
 function renderShiftStats(schedule, employees) {
-    // 1. Count total shifts in schedule
+    // Recalculate scheduled shifts (instead of relying on possibly stale currentShiftCount)
     let totalScheduledShifts = 0;
     for (let day in schedule) {
         for (let shift in schedule[day]) {
@@ -676,13 +723,10 @@ function renderShiftStats(schedule, employees) {
         }
     }
 
-    // 2. Count total preferred shifts requested
-    let totalPreferredShifts = 0;
-    for (let [, emp] of employees) {
-        totalPreferredShifts += emp.preferredAmountofShifts;
-    }
+    // Use your global totalPrefShifts
+    let totalPreferredShifts = totalPrefShifts;
 
-    // 3. Create HTML output
+    // Update the DOM
     const container = document.getElementById("shift-stats");
     container.innerHTML = "";
 
@@ -691,19 +735,25 @@ function renderShiftStats(schedule, employees) {
     totalDiv.innerHTML = `
         <strong>Total Scheduled Shifts:</strong> ${totalScheduledShifts} <br>
         <strong>Total Preferred Shifts Requested:</strong> ${totalPreferredShifts} <br>
-        <strong>Supply vs Demand Ratio:</strong> ${(totalScheduledShifts / totalPreferredShifts).toFixed(2)}
+        <strong>Supply vs Demand Ratio:</strong> ${
+        (totalScheduledShifts / (totalPreferredShifts || 1)).toFixed(2)
+    }
     `;
     container.appendChild(totalDiv);
 
-    // Individual employee ratios
+    // Employee stats
     const empList = document.createElement("ul");
     for (let [, emp] of employees) {
         const li = document.createElement("li");
-        li.textContent = `${emp.name}: Assigned ${emp.currShiftNum} / Desired ${emp.preferredAmountofShifts} → ${(emp.currShiftNum / emp.preferredAmountofShifts * 100).toFixed(0)}%`;
+        const ratio = emp.preferredAmountofShifts
+            ? ((emp.currShiftNum / emp.preferredAmountofShifts) * 100).toFixed(0)
+            : "N/A";
+        li.textContent = `${emp.name}: Assigned ${emp.currShiftNum} / Desired ${emp.preferredAmountofShifts} → ${ratio}%`;
         empList.appendChild(li);
     }
     container.appendChild(empList);
 }
+
 
 /**************************************
     TESTING SCHEDULER FUNCTIONS
@@ -711,7 +761,7 @@ function renderShiftStats(schedule, employees) {
 
 // Example Employees
 
-// Employee 1: Shift Lead, prefers morning, wants 3 shifts
+//Employee 1: Shift Lead, prefers morning, wants 3 shifts
 // addEmployee("Hannah Lee", {
 //     Monday: createAvailability(true, true, false),
 //     Tuesday: createAvailability(true, true, false),
