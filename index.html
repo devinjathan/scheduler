@@ -3,12 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
     <title>Scheduler Alpha</title>
 </head>
 <body>
+    <!-- Schedule Template Inputs -->
+    <div class="Schedule_Template_Container">
+        <h2>Schedule Template</h2>
+        <form id="Schedule_Template_Form">
+            <label>Desired Hours (per week):
+                <input type=number name="Desired_Hrs" id="Desired_Hrs">
+            </label>
+            <button type="submit" class="submitEmp">Submit</button>
+        </form>
+
+        <!-- Priority days checkbox here later-->
+        <div>
+            <label for="priorityDay">Day:</label>
+            <select id="priorityDay">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+
+            <label for="priorityShift">Shift:</label>
+            <select id="priorityShift">
+                <option value="morning">Morning</option>
+                <option value="float">Floater</option>
+                <option value="night">Night</option>
+            </select>
+
+            <button type="button" id="addPriorityBtn">Add Priority</button>
+
+            <ol id="priorityList"></ol>
+        </div>
 
 
-    <h1> scheduler </h1>
+        <label>Fairness vs Preference
+            <input type="range" min="0" max="1" step="0.01" class="slider" id="myRange">
+            <div id="sliderOutput">Fairness: 50% | Preference: 50%</div>
+        </label>
+    </div>
+
+    <div class="addEmployeeContainer">
+        <h2>Add Employee</h2>
+        <form id="Add_Employee_Form">
+            <div class="formRow">
+                <label for="Name">Name:
+                    <input type=text name="Name" id="Name" required>
+                </label>
+                <label for="desiredShifts">Desired amount of shifts:
+                    <select id="desiredShifts" name="desiredShifts" required>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </label>
+            </div>
+            <div class="formRow">
+                <label for="role">Role:
+                    <select id="role" name="role" required>
+                        <option value="SL">Shift Lead</option>
+                        <option value="TM">Team Member</option>
+                    </select>
+                </label>
+                <label for="preferredShift">Preferred Shift:
+                    <select id="preferredShift" name="preferredShift">
+                        <option value="morning">Morning</option>
+                        <option value="floater">Floater</option>
+                        <option value="night">Night</option>
+                        <option value="none">N/A</option>
+                    </select>
+                </label>
+            </div>
+
+            <h3>Availability</h3>
+            <table>
+                <tr>
+                    <th>Day</th>
+                    <th>Morning</th>
+                    <th>Floater</th>
+                    <th>Night</th>
+                </tr>
+                <tr>
+                    <td>Sunday</td>
+                    <td><input type="checkbox" name="availability[Sunday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Sunday][float]"></td>
+                    <td><input type="checkbox" name="availability[Sunday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Monday</td>
+                    <td><input type="checkbox" name="availability[Monday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Monday][float]"></td>
+                    <td><input type="checkbox" name="availability[Monday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Tuesday</td>
+                    <td><input type="checkbox" name="availability[Tuesday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Tuesday][float]"></td>
+                    <td><input type="checkbox" name="availability[Tuesday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Wednesday</td>
+                    <td><input type="checkbox" name="availability[Wednesday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Wednesday][float]"></td>
+                    <td><input type="checkbox" name="availability[Wednesday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Thursday</td>
+                    <td><input type="checkbox" name="availability[Thursday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Thursday][float]"></td>
+                    <td><input type="checkbox" name="availability[Thursday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Friday</td>
+                    <td><input type="checkbox" name="availability[Friday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Friday][float]"></td>
+                    <td><input type="checkbox" name="availability[Friday][night]"></td>
+                </tr>
+                <tr>
+                    <td>Saturday</td>
+                    <td><input type="checkbox" name="availability[Saturday][morning]"></td>
+                    <td><input type="checkbox" name="availability[Saturday][float]"></td>
+                    <td><input type="checkbox" name="availability[Saturday][night]"></td>
+                </tr>
+            </table>
+
+            <button type="submit" class="submitEmp">Submit</button>
+        </form>
+    </div>
+
+    <!-- Outputs -->
+    <div class="Employee_List_Container">
+        <h2>Employee List</h2>
+        <table id="Employee_Table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="schedule-container">
+        <h2>Schedule Output</h2>
+        <div id="shift-stats"></div>
+        <button onclick="renderShiftStats(schedule, employees)">Show Shift Stats</button>
+
+        <button type="button" id ="genSchedTemplate">Generate Schedule</button>
+        <button type="button" id ="autoAssignBtn">Auto Assign People</button>
+        <div id="schedule-output" class="grid">
+            <!-- Output goes here-->
+
+        </div>
+    </div>
+
 
     <script src="scheduler.js"></script>
 </body>
