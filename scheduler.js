@@ -949,7 +949,7 @@ addEmployee("Justyne", {
     Sunday: createAvailability(false, false, false)
 }, "N/A", 3, "SL", 0);
 
-addEmployee("Obi 'too cool for school' Pelmore", {
+addEmployee("Obi", {
     Monday: createAvailability(true, true, true),
     Tuesday: createAvailability(true, true, true),
     Wednesday: createAvailability(true, true, true),
