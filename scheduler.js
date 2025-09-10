@@ -573,7 +573,7 @@ document.getElementById("Add_Employee_Form").addEventListener("submit", function
     const editingID = form.dataset.editingID;
 
     const name = form.elements["Name"].value;
-    const desiredShifts = form.elements["desiredShifts"].value;
+    const desiredShifts = parseInt(form.elements["desiredShifts"].value, 10);
     const role = form.elements["role"].value;
     const preferredShift = form.elements["preferredShift"].value;
 
@@ -593,6 +593,11 @@ document.getElementById("Add_Employee_Form").addEventListener("submit", function
         if(editingID){
             const id = Number(editingID);
             let currEmployee = employees.get(id);
+
+            //adjust global preferred total
+            const oldPref = Number(currEmployee.preferredAmountofShifts) || 0;
+            totalPrefShifts = totalPrefShifts - oldPref + desiredShifts;
+
             currEmployee.name = name;
             currEmployee.availability = availability;
             currEmployee.preferredShift = preferredShift;
@@ -607,7 +612,7 @@ document.getElementById("Add_Employee_Form").addEventListener("submit", function
 
     // refresh list and form
     renderEmployeeList();
-
+    getEmployeeFromForm();
     form.reset();
 });
 
@@ -1003,3 +1008,37 @@ function printShiftSupplyDemand(schedule, employees) {
 renderSchedule(schedule);
 renderEmployeeList();
 renderPriorityList();
+function getEmployeeFromForm() {
+    // Grab values from the form
+    const name = document.getElementById("Name").value;
+    const desiredShifts = document.getElementById("desiredShifts").value;
+    const role = document.getElementById("role").value;
+    const preferredShift = document.getElementById("preferredShift").value;
+
+    // Build availability object
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const availability = {};
+
+    days.forEach(day => {
+        availability[day] = {
+            morning: document.querySelector(`[name="availability[${day}][morning]"]`).checked,
+            float: document.querySelector(`[name="availability[${day}][float]"]`).checked,
+            night: document.querySelector(`[name="availability[${day}][night]"]`).checked,
+        };
+    });
+
+    // Create employee object
+    const employee = {
+        name,
+        desiredShifts,
+        role,
+        preferredShift,
+        availability
+    };
+
+    // Output employee details to console
+    console.log("Employee Details:", employee);
+
+    // Return in case you want to capture it
+    return employee;
+}
