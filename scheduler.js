@@ -620,6 +620,10 @@ function handleFileUpload(event){
         try {
             const parsed = JSON.parse(e.target.result);
             employees = new Map(parsed);
+            // account for other stats not in map
+            recalcTotalPrefShifts();
+            recalcCurrID();
+
             renderEmployeeList();
         } catch (err) {
             console.error("Invalid JSON file", err);
@@ -627,6 +631,20 @@ function handleFileUpload(event){
         }
     };
     reader.readAsText(file);
+}
+
+function recalcTotalPrefShifts() {
+    totalPrefShifts = 0;
+    for (let [, emp] of employees) {
+        totalPrefShifts += emp.preferredAmountofShifts;
+    }
+}
+function recalcCurrID(){
+    let maxID = -1;
+    for (let [id, emp] of employees) {
+        if (id > maxID) maxID = id;
+    }
+    currID = maxID + 1;
 }
 
 
