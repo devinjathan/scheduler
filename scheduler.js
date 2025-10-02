@@ -20,6 +20,7 @@ let totalPrefShifts = 0;
 let currentShiftCount = 0;
 
 let days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+let default_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 let currID = 1;
 
 let shiftHours = {
@@ -295,6 +296,12 @@ function bestCandidate(pool, day, shift){
             continue;
         }
 
+        // TODO: apply clopen not available
+        if(worksClopen(day, shift, currID)){
+            currScore = -10;
+            continue;
+        }
+
         // Passed prior checks get to be scored
         // Preference [0-1]
         let p = 0.5;
@@ -371,6 +378,32 @@ function workingThatDay(day, id){
         }
     }
     return false;
+}
+
+/*
+    Clopen fix
+*/
+function worksClopen(day, shift, id){
+    if(shift !== "morning") return false; // only check if trying to assign to morning
+
+    // find the previous day
+    const index = default_days.indexOf(day);
+    if(index === -1 || index === 0) return false;   // if its monday we cant really check for sunday before
+    const prevDay = days[index - 1];
+
+    // iterate through shifts of previous day to see if they worked at night
+    const nightSlots = schedule[prevDay]["night"];
+    for (let role in nightSlots) {
+        for (let slot of nightSlots[role]) {
+            if (slot.employees === id) {
+                return true; // worked the night before so issue
+            }
+        }
+    }
+
+    // did not work the night before
+    return false;
+
 }
 
 
@@ -561,6 +594,39 @@ function renderEmployeeList() {
 
         tableBody.appendChild(row);
     });
+}
+
+// SAVE FUNCTIONS FOR EMPLOYEES
+function downloadEmployees(){
+    const employeesArray = Array.from(employees.entries());
+    const blob = new Blob([JSON.stringify(employeesArray, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "employees.json"; // filename
+    a.click();
+
+    URL.revokeObjectURL(url);
+    console.log("Employees saved to JSON file.");
+}
+
+function handleFileUpload(event){
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            employees = new Map(parsed);
+            renderEmployeeList();
+        } catch (err) {
+            console.error("Invalid JSON file", err);
+            alert("Error loading file. Make sure it's a valid employees.json.");
+        }
+    };
+    reader.readAsText(file);
 }
 
 
@@ -909,115 +975,95 @@ function renderShiftStats(schedule, employees) {
 //     Sunday: createAvailability(true, false, true)
 // }, "night", 4, "TM", 0);
 
-addEmployee("Devin", {
-    Monday: createAvailability(true, false, false),
-    Tuesday: createAvailability(false, false, true),
-    Wednesday: createAvailability(true, false, false),
-    Thursday: createAvailability(false, false, true),
-    Friday: createAvailability(true, false, false),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 3, "TM", 0);
-
-addEmployee("Tammy", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(false, false, false),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, false, false),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 4, "TM", 0);
-
-addEmployee("Mathew", {
-    Monday: createAvailability(false, false, true),
-    Tuesday: createAvailability(false, false, false),
-    Wednesday: createAvailability(false, false, false),
-    Thursday: createAvailability(false, false, true),
-    Friday: createAvailability(false, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, false, false)
-}, "N/A", 3, "TM", 0);
-
-addEmployee("Justyne", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, false, false),
-    Wednesday: createAvailability(false, false, true),
-    Thursday: createAvailability(true, false, false),
-    Friday: createAvailability(false, false, true),
-    Saturday: createAvailability(false, false, true),
-    Sunday: createAvailability(false, false, false)
-}, "N/A", 3, "SL", 0);
-
-addEmployee("Obi", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 4, "SL", 0);
-
-addEmployee("Maili", {
-    Monday: createAvailability(false, false, false),
-    Tuesday: createAvailability(false, false, false),
-    Wednesday: createAvailability(false, false, false),
-    Thursday: createAvailability(false, false, true),
-    Friday: createAvailability(false, false, true),
-    Saturday: createAvailability(false, false, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 3, "TM", 0);
-
-addEmployee("Rob", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 4, "SL", 0);
-
-addEmployee("Avi", {
-    Monday: createAvailability(false, false, false),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(false, false, false),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, false, false)
-}, "N/A", 4, "SL", 0);
-
-addEmployee("Elizabeth", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(false, false, false),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 4, "TM", 0);
-
-addEmployee("Dallas", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(true, true, true),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 5, "SL", 0);
-
-addEmployee("Niveya", {
-    Monday: createAvailability(true, true, true),
-    Tuesday: createAvailability(true, true, true),
-    Wednesday: createAvailability(true, true, true),
-    Thursday: createAvailability(true, true, true),
-    Friday: createAvailability(false, false, false),
-    Saturday: createAvailability(true, true, true),
-    Sunday: createAvailability(true, true, true)
-}, "N/A", 3, "TM", 0);
+// addEmployee("Devin", {
+//     Monday: createAvailability(true, false, false),
+//     Tuesday: createAvailability(false, false, true),
+//     Wednesday: createAvailability(true, false, false),
+//     Thursday: createAvailability(false, false, true),
+//     Friday: createAvailability(true, false, false),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 3, "TM", 0);
+//
+// addEmployee("Tammy", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(false, false, false),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, false, false),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 4, "TM", 0);
+//
+// addEmployee("Mathew", {
+//     Monday: createAvailability(false, false, true),
+//     Tuesday: createAvailability(false, false, false),
+//     Wednesday: createAvailability(false, false, false),
+//     Thursday: createAvailability(false, false, true),
+//     Friday: createAvailability(false, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, false, false)
+// }, "N/A", 3, "TM", 0);
+//
+// addEmployee("Justyne", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(true, false, false),
+//     Wednesday: createAvailability(false, false, true),
+//     Thursday: createAvailability(true, false, false),
+//     Friday: createAvailability(false, false, true),
+//     Saturday: createAvailability(false, false, true),
+//     Sunday: createAvailability(false, false, false)
+// }, "N/A", 3, "SL", 0);
+//
+// addEmployee("Obi", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(true, true, true),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 4, "SL", 0);
+//
+// addEmployee("Maili", {
+//     Monday: createAvailability(false, false, false),
+//     Tuesday: createAvailability(false, false, false),
+//     Wednesday: createAvailability(false, false, false),
+//     Thursday: createAvailability(false, false, true),
+//     Friday: createAvailability(false, false, true),
+//     Saturday: createAvailability(false, false, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 3, "TM", 0);
+//
+// addEmployee("Avi", {
+//     Monday: createAvailability(false, false, false),
+//     Tuesday: createAvailability(true, true, true),
+//     Wednesday: createAvailability(false, false, false),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, false, false)
+// }, "N/A", 4, "SL", 0);
+//
+// addEmployee("Elizabeth", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(false, false, false),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 4, "TM", 0);
+//
+// addEmployee("Dallas", {
+//     Monday: createAvailability(true, true, true),
+//     Tuesday: createAvailability(true, true, true),
+//     Wednesday: createAvailability(true, true, true),
+//     Thursday: createAvailability(true, true, true),
+//     Friday: createAvailability(true, true, true),
+//     Saturday: createAvailability(true, true, true),
+//     Sunday: createAvailability(true, true, true)
+// }, "N/A", 5, "SL", 0);
 
 
 

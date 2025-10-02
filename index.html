@@ -143,6 +143,10 @@
     <!-- Outputs -->
     <div class="Employee_List_Container">
         <h2>Employee List</h2>
+        <div class="save-load-container">
+            <button onclick="downloadEmployees()">💾 Save Employees</button>
+            <input type="file" id="uploadFile" accept=".json" onchange="handleFileUpload(event)">
+        </div>
         <table id="Employee_Table">
             <thead>
             <tr>
