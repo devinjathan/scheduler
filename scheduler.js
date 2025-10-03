@@ -389,7 +389,7 @@ function worksClopen(day, shift, id){
     // find the previous day
     const index = default_days.indexOf(day);
     if(index === -1 || index === 0) return false;   // if its monday we cant really check for sunday before
-    const prevDay = days[index - 1];
+    const prevDay = default_days[index - 1];
 
     // iterate through shifts of previous day to see if they worked at night
     const nightSlots = schedule[prevDay]["night"];
